@@ -1,6 +1,6 @@
 import { Server } from "socket.io";
 import http from "http";
-import { newMessage } from "../services/room.service";
+import { newMessage ,getMessage} from "../services/room.service";
 import { verifyToken } from "../untils/auth.untils";
 
 export let io: Server;
@@ -13,7 +13,7 @@ export const initSocket = (server: http.Server) => {
     },
   });
 
-   io.use((socket, next) => {
+  io.use((socket, next) => {
     try {
       const token = socket.handshake.auth.token;
       const decoded = verifyToken(token);
@@ -27,8 +27,16 @@ export const initSocket = (server: http.Server) => {
   io.on("connection", (socket: any) => {
     console.log(`User connected: ${socket.id}`);
 
-    socket.on("joinRoom", (roomId: string) => {
+    io.of("/").adapter.sids.forEach((rooms, sid) => {
+      console.log("🔗 Active Socket:", sid);
+    });
+
+    socket.on("joinRoom", async (roomId: string) => {
       socket.join(roomId);
+      const { recordset: messages } = await getMessage(roomId);
+      console.log(`User ${socket.data.user.id} joined room: ${roomId}`);
+
+      socket.emit("chatHistory", messages);
     });
 
     socket.on("sendMessage", async (data: any) => {
@@ -37,14 +45,17 @@ export const initSocket = (server: http.Server) => {
       if (!roomId || !senderId || !content) {
         return socket.emit("error", { message: "Invalid message data" });
       }
-      console.log(`New message in room ${roomId} from user ${senderId}: ${content}`);
-      await newMessage({ roomId, senderId, content });
+      console.log(
+        `New message in room ${roomId} from user ${senderId}: ${content}`
+      );
+      const { recordset: result } = await newMessage({ roomId, senderId, content });
+        if (!result || result.length === 0) {
+            return socket.emit("error", { message: "Failed to send message" });
+        }
+
 
       io.to(roomId).emit("newMessage", {
-        roomId,
-        senderId,
-        content,
-        sentAt: new Date(),
+        ...result[0]
       });
     });
 

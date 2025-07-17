@@ -126,7 +126,8 @@ export const getMessage = async (roomId: string) => {
           FROM [Message] m
           JOIN [User] u ON m.senderId = u.id
           WHERE m.roomId = @roomId
-          ORDER BY m.sentAt ASC;
+          ORDER BY m.sentAt ASC
+          OFFSET 0 ROWS FETCH NEXT 50 ROWS ONLY;
         `)
     )
   );
