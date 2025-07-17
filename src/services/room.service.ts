@@ -60,12 +60,16 @@ export const joinRoom = async (data: any) => {
         .query(
           `INSERT INTO [RoomParticipant] (roomId, userId, joinedAt, isHost)
            VALUES (@roomId, @userId, @joinedAt, 0);
-           SELECT * FROM [RoomParticipant] WHERE roomId = @roomId AND userId = @userId;`
+
+           SELECT rp.id, rp.roomId, rp.userId, rp.joinedAt, rp.isHost, u.username AS userName
+           FROM [RoomParticipant] rp
+           JOIN [User] u ON rp.userId = u.id
+           WHERE rp.roomId = @roomId AND rp.userId = @userId;`
         )
     )
   );
   return result;
-}
+};
 
 export const getRoomById = async (roomId: string) => {
   const result = await safeExec("get-room-by-id", () =>
@@ -81,9 +85,7 @@ export const getRoomById = async (roomId: string) => {
 export const getRoomsByUserId = async (userId: string) => {
   const result = await safeExec("get-rooms-by-user-id", () =>
     exec((req) =>
-      req
-        .input("userId", userId)
-        .query(`
+      req.input("userId", userId).query(`
           SELECT r.id,r.name,r.type,r.isActive,r.createdAt,rp.joinedAt,u.username AS hostName 
           FROM [Room] r
           JOIN [RoomParticipant] rp ON r.id = rp.roomId
@@ -104,12 +106,9 @@ export const newMessage = async (data: any) => {
         .input("roomId", data.roomId)
         .input("senderId", data.senderId)
         .input("content", data.content)
-        .input("sentAt", new Date())
-        .query(`
+        .input("sentAt", new Date()).query(`
           INSERT INTO [Message] (id, roomId, senderId, content, sentAt)
           VALUES (@id, @roomId, @senderId, @content, @sentAt);
-          SELECT id, content, sentAt, (SELECT username FROM [User] WHERE id = @senderId) AS senderName
-          FROM [Message] WHERE roomId = @roomId AND senderId = @senderId ORDER BY sentAt DESC;
         `)
     )
   );
@@ -119,9 +118,7 @@ export const newMessage = async (data: any) => {
 export const getMessage = async (roomId: string) => {
   const result = await safeExec("get-messages-by-room-id", () =>
     exec((req) =>
-      req
-        .input("roomId", roomId)
-        .query(`
+      req.input("roomId", roomId).query(`
           SELECT m.id, m.roomId, m.senderId, m.content, m.sentAt, u.username AS senderName
           FROM [Message] m
           JOIN [User] u ON m.senderId = u.id
@@ -133,4 +130,3 @@ export const getMessage = async (roomId: string) => {
   );
   return result;
 };
-

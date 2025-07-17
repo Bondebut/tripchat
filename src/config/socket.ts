@@ -48,7 +48,11 @@ export const initSocket = (server: http.Server) => {
       console.log(
         `New message in room ${roomId} from user ${senderId}: ${content}`
       );
-      const { recordset: result } = await newMessage({ roomId, senderId, content });
+      
+      await newMessage({ roomId, senderId, content });
+
+      const { recordset: result } = await getMessage(roomId);
+       
         if (!result || result.length === 0) {
             return socket.emit("error", { message: "Failed to send message" });
         }

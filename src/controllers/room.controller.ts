@@ -183,7 +183,9 @@ export const newMessage = async (req: Request, res: Response) => {
         .json({ result: false, message: "Message content is required" });
     }
 
-    const { recordset: message } = await roomService.newMessage(data);
+    await roomService.newMessage(data);
+    
+    const { recordset: message } = await roomService.getMessage(data.roomId);
 
     if (!message || message.length === 0) {
       return res.status(500).json({
