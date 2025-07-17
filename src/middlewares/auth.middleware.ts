@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
 import { JwtPayload } from "jsonwebtoken";
 import { getUserByEmail } from "../services/user.service";
 import { getRoomsByUserId } from "../services/room.service";
+import {verifyToken} from "../untils/auth.untils";
 
 declare global {
   namespace Express {
@@ -24,7 +24,7 @@ export const isAuthenticated = (
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!);
+    const decoded = verifyToken(token!);
     req.user = decoded;
   } catch (error) {
     return res.status(401).json({ message: "Invalid token" });

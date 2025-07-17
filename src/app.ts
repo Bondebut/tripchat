@@ -7,8 +7,7 @@ import { readdirSync } from 'fs';
 import { initSocket } from './config/socket';
 import http from 'http';
 
-// import { userRoutes } from './routes/user.routes';
-// import { roomRoutes } from './routes/room.routes';
+
 
 const callOption = {
     origin: '*', // Allow all origins
@@ -35,4 +34,4 @@ readdirSync('./src/routes').map((file) => app.use('/api', require(`./routes/${fi
 
 
 
-export default app;
+export default server;
