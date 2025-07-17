@@ -1,0 +1,47 @@
+
+1. Authentication / User Flow
+[Frontend] ➜ สมัคร / ล็อกอิน ➜ [Backend]
+    ➜ สร้าง user (registerUser) ➜ บันทึกลง table [User]
+    ➜ สร้าง token ➜ ส่งกลับ frontend ➜ เก็บใน localStorage
+
+2. Room Flow (ห้องแชท/คอล)
+[User A] ➜ สร้างห้องใหม่ ➜ POST /room
+    ➜ insert into [Room], [RoomParticipant] (isHost = true)
+
+[User B] ➜ เข้าห้อง ➜ POST /room/join
+    ➜ check room valid ➜ insert [RoomParticipant]
+
+ในห้อง ➜ แชท ➜ POST /message
+    ➜ insert into [Message] ➜ broadcast (socket.io)
+
+วิดีโอคอล ➜ RTC signaling ➜ client to client
+
+3. Trip Plan Flow
+[Host] ➜ สร้างแผนเที่ยว ➜ POST /trip-plan
+    ➜ insert [TripPlan] (linked with roomId, createdBy)
+
+[เพื่อนในห้อง] ➜ Join แผนเที่ยว ➜ POST /trip-plan/join
+    ➜ insert [TripParticipant]
+
+[Host] ➜ ใส่ค่าใช้จ่าย ➜ POST /expense
+    ➜ insert [Expense] ➜ insert [ExpenseShare] ตามสูตรหาร
+
+4. Expense Sharing / เรียกเก็บเงิน
+เมื่อสร้าง Expense ➜ สร้าง record ใน [ExpenseShare] ต่อคน
+เช่น:
+    ➜ total 1200 บาท / 3 คน ➜ share 400 ต่อคน
+    ➜ หรือ custom ➜ คนละจำนวน ➜ insert manual
+
+[ผู้ใช้] ➜ ดูยอดต้องจ่าย ➜ GET /trip-plan/:id/expenses
+
+5. แชทส่วนตัว (DM)
+[User A] ➜ DM ถึง [User B] ➜ POST /dm
+    ➜ insert [PrivateChat] ➜ ส่งผ่าน socket หรือ fetch
+
+[User B] ➜ รับข้อความ ➜ GET /dm/:userId
+
+6. ระบบแสดงผลหน้า Angular
+- หน้า Home: รายการห้อง, แผนทริป, แชทล่าสุด
+- หน้า Room: แชทรวม + ปุ่มวิดีโอคอล
+- หน้า Trip Plan: รายละเอียดทริป + คนร่วม + ค่าใช้จ่าย
+- หน้า Wallet: รายการที่ต้องจ่าย / ได้รับ

@@ -1,0 +1,10 @@
+//ติดตั้ง Dependencies
+npm init -y
+npm install express cors dotenv
+npm install --save-dev typescript ts-node-dev @types/node @types/express
+npm install morgan @types/morgan
+npm install --save-dev nodemon
+
+
+npm install prisma @prisma/client
+npx prisma init

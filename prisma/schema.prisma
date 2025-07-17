@@ -1,0 +1,174 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+
+
+model User {
+  id        String   @id @default(uuid()) @db.UniqueIdentifier
+  username  String   @db.NVarChar(100)
+  email     String   @unique @db.NVarChar(255)
+  password  String   @db.NVarChar(255)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now()) @db.DateTime
+  updatedAt DateTime @updatedAt @default(now()) @db.DateTime
+
+  roleId    Int      @default(2) 
+  role      Role     @relation(fields: [roleId], references: [RoleId])
+  lastLogin DateTime? @db.DateTime
+  roomsCreated           Room[]            @relation("RoomCreatedBy")
+  roomParticipants       RoomParticipant[]
+  messages               Message[]         @relation("MessageSender")
+  privateMessagesSent    PrivateChat[]     @relation("PrivateChatSender")
+  privateMessagesReceived PrivateChat[]     @relation("PrivateChatReceiver")
+  tripPlansCreated       TripPlan[]        @relation("TripPlanCreator")
+  tripParticipations     TripParticipant[]
+  expensesPaid           Expense[]         @relation("ExpensePayer")
+  expenseShares          ExpenseShare[]
+
+  @@index([email])
+  @@index([username])
+}
+
+model Role {
+  RoleId   Int     @id @default(autoincrement())
+  RoleName String  @unique @db.NVarChar(50)
+
+  users    User[]
+}
+
+model Room {
+  id          String   @id @default(uuid()) @db.UniqueIdentifier
+  name        String   @db.NVarChar(255)
+  type        String   @db.NVarChar(50)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now()) @db.DateTime
+  createdBy   String   @db.UniqueIdentifier
+
+  creator      User              @relation("RoomCreatedBy", fields: [createdBy], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participants RoomParticipant[]
+  messages     Message[]
+  tripPlans    TripPlan[]
+
+  @@index([createdBy])
+  @@index([type])
+}
+
+model RoomParticipant {
+  roomId   String   @db.UniqueIdentifier
+  userId   String   @db.UniqueIdentifier
+  joinedAt DateTime @default(now()) @db.DateTime
+  isHost   Boolean  @default(false)
+
+  room     Room     @relation(fields: [roomId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([roomId, userId])
+  @@index([roomId])
+  @@index([userId])
+}
+
+model Message {
+  id        String   @id @default(uuid()) @db.UniqueIdentifier
+  roomId    String   @db.UniqueIdentifier
+  senderId  String   @db.UniqueIdentifier
+  content   String   @db.NVarChar(MAX)
+  sentAt    DateTime @default(now()) @db.DateTime
+
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  sender    User     @relation("MessageSender", fields: [senderId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([roomId])
+  @@index([senderId])
+  @@index([sentAt])
+}
+
+model PrivateChat {
+  id         String   @id @default(uuid()) @db.UniqueIdentifier
+  senderId   String   @db.UniqueIdentifier
+  receiverId String   @db.UniqueIdentifier
+  content    String   @db.NVarChar(MAX)
+  sentAt     DateTime @default(now()) @db.DateTime
+
+  sender     User     @relation("PrivateChatSender", fields: [senderId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  receiver   User     @relation("PrivateChatReceiver", fields: [receiverId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([sentAt])
+}
+
+model TripPlan {
+  id          String   @id @default(uuid()) @db.UniqueIdentifier
+  roomId      String   @db.UniqueIdentifier
+  title       String   @db.NVarChar(255)
+  description String   @db.NVarChar(MAX)
+  startDate   DateTime @db.Date
+  endDate     DateTime @db.Date
+  createdBy   String   @db.UniqueIdentifier
+  createdAt   DateTime @default(now()) @db.DateTime
+
+  room         Room             @relation(fields: [roomId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  creator      User             @relation("TripPlanCreator", fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  participants TripParticipant[]
+  expenses     Expense[]
+
+  @@index([roomId])
+  @@index([createdBy])
+  @@index([startDate])
+}
+
+model TripParticipant {
+  planId    String   @db.UniqueIdentifier
+  userId    String   @db.UniqueIdentifier
+  confirmed Boolean  @default(false)
+
+  tripPlan  TripPlan @relation(fields: [planId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([planId, userId])
+  @@index([planId])
+  @@index([userId])
+}
+
+model Expense {
+  id        String   @id @default(uuid()) @db.UniqueIdentifier
+  planId    String   @db.UniqueIdentifier
+  title     String   @db.NVarChar(255)
+  amount    Decimal  @db.Decimal(10, 2)
+  paidBy    String   @db.UniqueIdentifier
+  createdAt DateTime @default(now()) @db.DateTime
+
+  tripPlan  TripPlan       @relation(fields: [planId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  payer     User           @relation("ExpensePayer", fields: [paidBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  shares    ExpenseShare[]
+
+  @@index([planId])
+  @@index([paidBy])
+  @@index([createdAt])
+}
+
+model ExpenseShare {
+  expenseId String  @db.UniqueIdentifier
+  userId    String  @db.UniqueIdentifier
+  amount    Decimal @db.Decimal(10, 2)
+
+  expense   Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  user      User    @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([expenseId, userId])
+  @@index([expenseId])
+  @@index([userId])
+}
