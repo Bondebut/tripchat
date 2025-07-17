@@ -70,10 +70,12 @@ export const isUserInRoom = async (
   try {
     const userId = (req.user as any).id;
 
-    console.log("Checking if user is in room:", userId);
+    if (!userId) {
+      return res.status(400).json({ result: false, message: "User ID is required" });
+    }
+    const roomId = req.params.id;
 
-    const rooms = await getRoomsByUserId(userId);
-    console.log("Rooms for user:", rooms);
+    const { recordset: rooms } = await getRoomsByUserId(userId);
 
     if (!rooms || rooms.length === 0) {
       return res.status(403).json({
@@ -81,7 +83,16 @@ export const isUserInRoom = async (
         message: "User is not part of any room",
       });
     }
-    
+
+    const isUserInRoom = rooms.some((room: any) => room.id === roomId);
+
+    if (!isUserInRoom) {
+      return res.status(403).json({
+        result: false,
+        message: "User is not a participant in this room",
+      });
+    };
+
     next();
   } catch (error) {
     console.error("Error checking room access:", error);
