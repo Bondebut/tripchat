@@ -21,7 +21,9 @@ export const initSocket = (server: http.Server) => {
 
     socket.on("sendMessage", async (data: any) => {
       const { roomId, senderId, content } = data;
-
+        if (!roomId || !senderId || !content) {
+            return socket.emit("error", { message: "Invalid message data" });
+        }
       await newMessage(data);
 
       io.to(roomId).emit("NewMessage", {
