@@ -163,3 +163,24 @@
     at Readable.emit (node:domain:489:12)
     at addChunk (node:internal/streams/readable:561:12)
     at readableAddChunkPushObjectMode (node:internal/streams/readable:538:3)
+[2025-07-17T01:30:20.580Z] [get-rooms-by-user-id] RequestError: Validation failed for parameter 'userId'. Invalid string.
+    at T:\Project\tripchat-server\node_modules\mssql\lib\tedious\request.js:449:19
+    at Array.forEach (<anonymous>)
+    at Request.userCallback (T:\Project\tripchat-server\node_modules\mssql\lib\tedious\request.js:446:46)
+    at Request.callback (T:\Project\tripchat-server\node_modules\tedious\src\request.ts:379:14)
+    at T:\Project\tripchat-server\node_modules\tedious\src\connection.ts:2631:17
+    at processTicksAndRejections (node:internal/process/task_queues:85:11)
+[2025-07-17T01:30:25.768Z] [get-rooms-by-user-id] RequestError: Validation failed for parameter 'userId'. Invalid string.
+    at T:\Project\tripchat-server\node_modules\mssql\lib\tedious\request.js:449:19
+    at Array.forEach (<anonymous>)
+    at Request.userCallback (T:\Project\tripchat-server\node_modules\mssql\lib\tedious\request.js:446:46)
+    at Request.callback (T:\Project\tripchat-server\node_modules\tedious\src\request.ts:379:14)
+    at T:\Project\tripchat-server\node_modules\tedious\src\connection.ts:2631:17
+    at processTicksAndRejections (node:internal/process/task_queues:85:11)
+[2025-07-17T01:30:48.770Z] [get-rooms-by-user-id] RequestError: Validation failed for parameter 'userId'. Invalid string.
+    at T:\Project\tripchat-server\node_modules\mssql\lib\tedious\request.js:449:19
+    at Array.forEach (<anonymous>)
+    at Request.userCallback (T:\Project\tripchat-server\node_modules\mssql\lib\tedious\request.js:446:46)
+    at Request.callback (T:\Project\tripchat-server\node_modules\tedious\src\request.ts:379:14)
+    at T:\Project\tripchat-server\node_modules\tedious\src\connection.ts:2631:17
+    at processTicksAndRejections (node:internal/process/task_queues:85:11)

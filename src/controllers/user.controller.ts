@@ -9,22 +9,41 @@ export const registerUser = async (req: Request, res: Response) => {
     //Validate body
     if (!data.email) {
       //
-      return res.status(400).json({result: false, message: "Email is require!!" });
+      return res
+        .status(400)
+        .json({ result: false, message: "Email is require!!" });
     }
 
     if (!/\S+@\S+\.\S+/.test(data.email)) {
-      return res.status(400).json({result: false, message: "Invalid email format!" });
+      return res
+        .status(400)
+        .json({ result: false, message: "Invalid email format!" });
     }
 
     if (data.password.length < 8) {
-      return res
-        .status(400)
-        .json({result: false, message: "Password must be at least 8 characters long!" });
+      return res.status(400).json({
+        result: false,
+        message: "Password must be at least 8 characters long!",
+      });
     }
 
-    // console.log("Registering user with data:", data);
+    const { recordset: existingUser } = await userService.getUserByEmail(
+      data.email
+    );
 
-    const user = await userService.registerUser(data);
+    if (existingUser && existingUser.length > 0) {
+      return res
+        .status(400)
+        .json({ result: false, message: "Email already exists!" });
+    }
+
+    const { recordset: user } = await userService.registerUser(data);
+
+    if (!user || user.length === 0) {
+      return res
+        .status(400)
+        .json({ result: false, message: "User registration failed" });
+    }
 
     return res.status(201).json({
       result: true,
@@ -43,13 +62,12 @@ export const registerUser = async (req: Request, res: Response) => {
 export const loginUser = async (req: Request, res: Response) => {
   try {
     const data = req.body;
-    const email = data.email.toLowerCase().trim();
 
-    if (!email) {
+    if (!data.email) {
       return res.status(400).json({ message: "Email is require!!" });
     }
 
-    if (!/\S+@\S+\.\S+/.test(email)) {
+    if (!/\S+@\S+\.\S+/.test(data.email)) {
       return res.status(400).json({ message: "Invalid email format!" });
     }
 
@@ -59,15 +77,27 @@ export const loginUser = async (req: Request, res: Response) => {
         .json({ message: "Password must be at least 8 characters long!" });
     }
 
-    const user = await userService.loginUser(data);
+    const { recordset: user } = await userService.getUserByEmail(data.email);
+
+    if (!user || user.length === 0) {
+      return res.status(400).json({ message: "Invalid email" });
+    }
+    const isPasswordValid = await userService.comparePassword(
+      data.password,
+      user[0].password
+    );
+
+    if (!isPasswordValid) {
+      return res.status(400).json({ message: "Invalid password" });
+    }
 
     const payload = {
-      username: user.username,
-      email: user.email,
+      id: user[0].id,
+      username: user[0].username,
+      email: user[0].email,
     };
-    console.log("User found:", user);
+
     // Generate JWT token
-    
     jwt.sign(
       payload,
       process.env.JWT_SECRET!,
@@ -83,9 +113,8 @@ export const loginUser = async (req: Request, res: Response) => {
           message: "User logged in successfully",
           data: {
             user: {
-              id: user.id,
-              username: user.username,
-              email: user.email,
+              username: user[0].username,
+              email: user[0].email,
             },
             token: token,
           },

@@ -4,6 +4,8 @@ import dotenv from 'dotenv';
 import morgan from 'morgan';
 //import readdir from 'fs';
 import { readdirSync } from 'fs';
+import { initSocket } from './config/socket';
+import http from 'http';
 
 // import { userRoutes } from './routes/user.routes';
 // import { roomRoutes } from './routes/room.routes';
@@ -16,6 +18,9 @@ const callOption = {
 
 dotenv.config();
 const app = express();
+const server = http.createServer(app);
+
+initSocket(server);
 
 app.use(morgan('dev')); // Logging middleware
 app.use(express.urlencoded({ extended: true })); // Middleware to parse URL-encoded bodies

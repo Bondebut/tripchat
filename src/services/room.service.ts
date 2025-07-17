@@ -9,18 +9,6 @@ export const createRoom = async (data: any) => {
   data.createdAt = new Date();
   data.createdBy = data.createdBy || null;
 
-  const existingRoom = await safeExec("check-room-exists", () =>
-    exec((req) =>
-      req
-        .input("name", data.name)
-        .query("SELECT * FROM [Room] WHERE name = @name")
-    )
-  );
-
-  if (existingRoom && existingRoom.recordset.length > 0) {
-    throw new Error("Room with this name already exists!");
-  }
-
   const result = await safeExec("create-room", () =>
     exec((req) =>
       req
@@ -45,24 +33,11 @@ export const createRoom = async (data: any) => {
         )
     )
   );
-
-  if (!result) {
-    throw new Error("Room creation failed, please try again");
-  }
-
-  return result.recordset[0];
+  return result;
 };
 
-export const joinRoom = async (data: any) => {
-  if (!data.roomId) {
-    throw new Error("Room ID is required to join a room");
-  }
-
-  if (!data.userId) {
-    throw new Error("User ID is required to join a room");
-  }
-
-  const existingParticipant = await safeExec("check-participant-exists", () =>
+export const checkParticipant = async (data: any) => {
+  const result = await safeExec("check-participant-exists", () =>
     exec((req) =>
       req
         .input("roomId", data.roomId)
@@ -72,11 +47,10 @@ export const joinRoom = async (data: any) => {
         )
     )
   );
+  return result;
+};
 
-  if (existingParticipant && existingParticipant.recordset.length > 0) {
-    throw new Error("You are already a participant in this room");
-  }
-
+export const joinRoom = async (data: any) => {
   const result = await safeExec("join-room", () =>
     exec((req) =>
       req
@@ -90,19 +64,10 @@ export const joinRoom = async (data: any) => {
         )
     )
   );
-
-  if (!result || result.recordset.length === 0) {
-    throw new Error("Failed to join the room, please try again");
-  }
-
-  return result.recordset[0];
+  return result;
 }
 
 export const getRoomById = async (roomId: string) => {
-  if (!roomId) {
-    throw new Error("Room ID is required");
-  }
-
   const result = await safeExec("get-room-by-id", () =>
     exec((req) =>
       req
@@ -110,20 +75,10 @@ export const getRoomById = async (roomId: string) => {
         .query("SELECT * FROM [Room] WHERE id = @roomId")
     )
   );
-
-  if (!result || result.recordset.length === 0) {
-    throw new Error("Room not found");
-  }
-
-  return result.recordset[0];
+  return result;
 };
 
 export const getRoomsByUserId = async (userId: string) => {
-    // console.log("Fetching rooms for user:", userId);
-  if (!userId) {
-    throw new Error("User ID is required");
-  }
-
   const result = await safeExec("get-rooms-by-user-id", () =>
     exec((req) =>
       req
@@ -137,6 +92,44 @@ export const getRoomsByUserId = async (userId: string) => {
         `)
     )
   );
-
-  return result ? result.recordset : [];
+  return result;
 };
+
+export const newMessage = async (data: any) => {
+  data.id = uuidv4();
+  const result = await safeExec("new-message", () =>
+    exec((req) =>
+      req
+        .input("id", data.id)
+        .input("roomId", data.roomId)
+        .input("senderId", data.senderId)
+        .input("content", data.content)
+        .input("sentAt", new Date())
+        .query(`
+          INSERT INTO [Message] (id, roomId, senderId, content, sentAt)
+          VALUES (@id, @roomId, @senderId, @content, @sentAt);
+          SELECT id, content, sentAt, (SELECT username FROM [User] WHERE id = @senderId) AS senderName
+          FROM [Message] WHERE roomId = @roomId AND senderId = @senderId ORDER BY sentAt DESC;
+        `)
+    )
+  );
+  return result;
+};
+
+export const getMessage = async (roomId: string) => {
+  const result = await safeExec("get-messages-by-room-id", () =>
+    exec((req) =>
+      req
+        .input("roomId", roomId)
+        .query(`
+          SELECT m.id, m.roomId, m.senderId, m.content, m.sentAt, u.username AS senderName
+          FROM [Message] m
+          JOIN [User] u ON m.senderId = u.id
+          WHERE m.roomId = @roomId
+          ORDER BY m.sentAt ASC;
+        `)
+    )
+  );
+  return result;
+};
+
